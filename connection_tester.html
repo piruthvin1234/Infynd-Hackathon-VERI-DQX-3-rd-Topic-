@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VETRI DQX - Connection Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: left: 4px solid #667eea;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #f59205;
+            font-weight: bold;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🔧 VETRI DQX Connection Tester</h1>
+        <p>This page will test all frontend-backend connections and show you exactly what's working or not.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend</button>
+        <div id="backend-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Signup</h2>
+        <button onclick="testSignup()">Test Signup</button>
+        <div id="signup-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Email Verification</h2>
+        <button onclick="testEmailVerification()">Request Email Verification</button>
+        <div id="email-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Test Create Project</h2>
+        <button onclick="testCreateProject()">Create Project</button>
+        <div id="project-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Test CSV Upload</h2>
+        <button onclick="testCsvUpload()">Upload Test CSV</button>
+        <div id="csv-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>7. Test All Endpoints</h2>
+        <button onclick="testAll()">Run All Tests</button>
+        <div id="all-result" class="result"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8000';
+        let authToken = null;
+
+        function displayResult(elementId, status, message, data = null) {
+            const el = document.getElementById(elementId);
+            const statusClass = status === 'success' ? 'success' : (status === 'error' ? 'error' : 'warning');
+            let html = `<span class="${statusClass}">${status.toUpperCase()}: ${message}</span>`;
+            if (data) {
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            el.innerHTML = html;
+        }
+
+        async function testBackendHealth() {
+            try {
+                const response = await fetch(`${BASE_URL}/docs`);
+                if (response.ok) {
+                    displayResult('backend-result', 'success', 'Backend is running on port 8000!');
+                } else {
+                    displayResult('backend-result', 'error', `Backend returned status: ${response.status}`);
+                }
+            } catch (error) {
+                displayResult('backend-result', 'error', `Cannot connect to backend: ${error.message}`);
+            }
+        }
+
+        async function testSignup() {
+            try {
+                const response = await fetch(`${BASE_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test@example.com',
+                        password: 'test123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.access_token;
+                    displayResult('signup-result', 'success', 'Signup successful!', data);
+                } else if (response.status === 400) {
+                    displayResult('signup-result', 'warning', 'User already exists (this is okay)', data);
+                    // Try login instead
+                    await testLogin();
+                } else {
+                    displayResult('signup-result', 'error', `Signup failed: ${response.status}`, data);
+                }
+            } catch (error) {
+                displayResult('signup-result', 'error', `Request failed: ${error.message}`);
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'test@example.com');
+                formData.append('password', 'test123');
+
+                const response = await fetch(`${BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.access_token;
+                    displayResult('login-result', 'success', 'Login successful! Token saved.', { token: authToken.substring(0, 50) + '...' });
+                } else {
+                    displayResult('login-result', 'error', `Login failed: ${response.status}`, data);
+                }
+            } catch (error) {
+                displayResult('login-result', 'error', `Request failed: ${error.message}`);
+            }
+        }
+
+        async function testEmailVerification() {
+            try {
+                const response = await fetch(`${BASE_URL}/auth/email/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test@example.com' })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult('email-result', 'success', 'Email verification requested! Check backend console for token.', data);
+                } else {
+                    displayResult('email-result', 'error', `Request failed: ${response.status}`, data);
+                }
+            } catch (error) {
+                displayResult('email-result', 'error', `Request failed: ${error.message}`);
+            }
+        }
+
+        async function testCreateProject() {
+            if (!authToken) {
+                displayResult('project-result', 'warning', 'No auth token. Running login first...');
+                await testLogin();
+                if (!authToken) {
+                    displayResult('project-result', 'error', 'Login failed. Cannot test project creation.');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/projects/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        name: 'Test Project',
+                        description: 'Auto-generated test project',
+                        user_id: 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok || response.status === 201) {
+                    displayResult('project-result', 'success', 'Project created successfully!', data);
+                } else {
+                    displayResult('project-result', 'error', `Create failed: ${response.status}`, data);
+                }
+            } catch (error) {
+                displayResult('project-result', 'error', `Request failed: ${error.message}`);
+            }
+        }
+
+        async function testCsvUpload() {
+            try {
+                const csvContent = 'company_name,email,phone\\nAcme Corp,test@acme.com,+14155551234\\nXYZ Ltd,invalid@gmial.com,+442071234567';
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const formData = new FormData();
+                formData.append('file', blob, 'test.csv');
+
+                const response = await fetch(`${BASE_URL}/api/upload-csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResult('csv-result', 'success', 'CSV uploaded and processed!', data);
+                } else {
+                    displayResult('csv-result', 'error', `Upload failed: ${response.status}`, data);
+                }
+            } catch (error) {
+                displayResult('csv-result', 'error', `Request failed: ${error.message}`);
+            }
+        }
+
+        async function testAll() {
+            displayResult('all-result', 'warning', 'Running all tests...');
+            await testBackendHealth();
+            await new Promise(r => setTimeout(r, 500));
+            await testSignup();
+            await new Promise(r => setTimeout(r, 500));
+            await testLogin();
+            await new Promise(r => setTimeout(r, 500));
+            await testEmailVerification();
+            await new Promise(r => setTimeout(r, 500));
+            await testCreateProject();
+            await new Promise(r => setTimeout(r, 500));
+            await testCsvUpload();
+            displayResult('all-result', 'success', 'All tests completed! Check results above.');
+        }
+    </script>
+</body>
+
+</html>

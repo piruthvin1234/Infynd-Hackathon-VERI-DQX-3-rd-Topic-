@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+.heptagon-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+    color: #00d4ff;
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.heptagon-chart-container {
+    position: relative;
+    width: 700px;
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.heptagon-canvas {
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+    cursor: crosshair;
+}
+
+.heptagon-data-panel {
+    width: 80%;
+    max-width: 800px;
+    margin: 20px 0 0 0;
+    background: rgba(0, 212, 255, 0.03);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    backdrop-filter: blur(5px);
+}
+
+.heptagon-data-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.heptagon-data-item:hover {
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.heptagon-label-text {
+    font-size: 0.9rem;
+    color: #a0c4ff;
+}
+
+.heptagon-value-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 5px #00d4ff;
+}
+
+.heptagon-grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+}

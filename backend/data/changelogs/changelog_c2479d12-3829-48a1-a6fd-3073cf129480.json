@@ -1,0 +1,110 @@
+[
+  {
+    "change_id": "603c019f-172f-49a4-9ddf-6c2735497c79",
+    "row_index": 0,
+    "column": "company_name",
+    "original_value": "Gogle",
+    "suggested_value": "Google",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.113293",
+    "final_value": "Google"
+  },
+  {
+    "change_id": "7917ab2c-b1b4-4653-ad7e-2858a059b5a0",
+    "row_index": 0,
+    "column": "domain",
+    "original_value": "gogle.com",
+    "suggested_value": "google.com",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "google.com"
+  },
+  {
+    "change_id": "2c2be1a7-a3f1-4a98-bb57-3a1759b6c0f7",
+    "row_index": 0,
+    "column": "email",
+    "original_value": "wrongmail",
+    "suggested_value": "wrongmail",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "wrongmail"
+  },
+  {
+    "change_id": "88609773-afab-4e52-94d1-350d5446776a",
+    "row_index": 2,
+    "column": "company_name",
+    "original_value": "Microsft",
+    "suggested_value": "Microsoft",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "Microsoft"
+  },
+  {
+    "change_id": "588b0786-def7-419a-b000-47be71b508f3",
+    "row_index": 2,
+    "column": "domain",
+    "original_value": "microsft.com",
+    "suggested_value": "microsoft.com",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "microsoft.com"
+  },
+  {
+    "change_id": "da359499-e566-49a7-932d-8480531ebfd4",
+    "row_index": 2,
+    "column": "job_title",
+    "original_value": "Sr. Developer",
+    "suggested_value": "Senior Developer",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "Senior Developer"
+  },
+  {
+    "change_id": "8cb8ff1a-19da-4bae-a407-fa7ec52f9b13",
+    "row_index": 3,
+    "column": "job_title",
+    "original_value": "CEO",
+    "suggested_value": "Chief Executive Officer",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "Chief Executive Officer"
+  },
+  {
+    "change_id": "b0744a03-d198-4520-b9fc-14f2d94b36ba",
+    "row_index": 4,
+    "column": "company_name",
+    "original_value": "Aplle",
+    "suggested_value": "Apple",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "Apple"
+  },
+  {
+    "change_id": "a31b9fbf-8e3b-4fd7-a12d-0327d677c720",
+    "row_index": 5,
+    "column": "domain",
+    "original_value": "netflx.com",
+    "suggested_value": "netflix.com",
+    "action": "accept",
+    "reason": null,
+    "modified_by": "dineshsurrya66@gmail.com",
+    "timestamp": "2025-12-17T17:27:41.114293",
+    "final_value": "netflix.com"
+  }
+]

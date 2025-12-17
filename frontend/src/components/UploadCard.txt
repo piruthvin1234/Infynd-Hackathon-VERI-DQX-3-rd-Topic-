@@ -1,0 +1,328 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Upload,
+  FileSpreadsheet,
+  Loader2,
+  X,
+  Play,
+  Database
+} from "lucide-react";
+
+import { uploadFiles, analyzeFile } from "../services/api";
+import { useTheme } from "../context/ThemeContext";
+
+export default function UploadCard({ setReport }) {
+  const navigate = useNavigate();
+  const { getColors } = useTheme();
+  const colors = getColors();
+
+  const [files, setFiles] = useState([]);
+  const [uploadedFilesData, setUploadedFilesData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  /* ---------------------------------------------
+     Drag & Drop Handlers
+  --------------------------------------------- */
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files?.length) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  /* ---------------------------------------------
+     File Handling
+  --------------------------------------------- */
+  const handleFiles = (fileList) => {
+    const csvFiles = Array.from(fileList).filter((f) =>
+      f.name.endsWith(".csv")
+    );
+
+    if (!csvFiles.length) {
+      alert("Only CSV files are supported.");
+      return;
+    }
+
+    setFiles((prev) => [...prev, ...csvFiles]);
+  };
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /* ---------------------------------------------
+     Upload & Analyze
+  --------------------------------------------- */
+  const handleUpload = async () => {
+    if (!files.length) return;
+    setLoading(true);
+    try {
+      const res = await uploadFiles(files);
+      setUploadedFilesData(res.data);
+      setFiles([]);
+    } catch (err) {
+      alert(err.response?.data?.detail || "Upload failed.");
+    }
+    setLoading(false);
+  };
+
+  const handleAnalyze = async (fileId) => {
+    setLoading(true);
+    try {
+      await analyzeFile(fileId);
+      navigate(`/data-view/${fileId}`);
+    } catch {
+      alert("Analysis failed.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div
+      className="rounded-3xl border shadow-2xl p-8 transition-all duration-300"
+      style={{
+        backgroundColor: colors.cardBg,
+        borderColor: colors.border
+      }}
+    >
+      {/* =========================================
+          HEADER
+      ========================================= */}
+      <div className="flex items-center gap-4 mb-8">
+        <div
+          className="p-3 rounded-2xl shadow-md"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accent1}, ${colors.accent2})`
+          }}
+        >
+          <Database className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: colors.textPrimary }}
+          >
+            Upload & Analyze
+          </h2>
+          <p
+            className="text-sm"
+            style={{ color: colors.textSecondary }}
+          >
+            Upload CSV datasets for quality analysis
+          </p>
+        </div>
+      </div>
+
+      {/* =========================================
+          DROP ZONE
+      ========================================= */}
+      {uploadedFilesData.length === 0 && (
+        <div
+          className={`relative rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-300
+            ${dragActive ? "scale-[1.01]" : ""}
+          `}
+          style={{
+            borderColor: dragActive ? colors.accent1 : colors.border,
+            backgroundColor: dragActive
+              ? `${colors.accent1}15`
+              : "transparent"
+          }}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            accept=".csv"
+            multiple
+            onChange={(e) => handleFiles(e.target.files)}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="p-4 rounded-full border"
+              style={{
+                backgroundColor: colors.secondary,
+                borderColor: colors.border
+              }}
+            >
+              <Upload
+                className="w-10 h-10"
+                style={{ color: colors.textSecondary }}
+              />
+            </div>
+            <div>
+              <p
+                className="font-semibold"
+                style={{ color: colors.textPrimary }}
+              >
+                Drag & drop CSV files
+              </p>
+              <p
+                className="text-sm"
+                style={{ color: colors.textSecondary }}
+              >
+                or click to browse
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================
+          PRE-UPLOAD FILE LIST
+      ========================================= */}
+      {files.length > 0 && uploadedFilesData.length === 0 && (
+        <div className="mt-6 space-y-3">
+          <p
+            className="text-sm font-semibold"
+            style={{ color: colors.textSecondary }}
+          >
+            Selected Files
+          </p>
+
+          {files.map((file, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between p-3 rounded-xl border"
+              style={{
+                backgroundColor: colors.secondary,
+                borderColor: colors.border
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet
+                  className="w-5 h-5"
+                  style={{ color: colors.accent1 }}
+                />
+                <div>
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    {file.name}
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {(file.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => removeFile(idx)}
+                className="p-1 rounded-lg hover:bg-red-500/10 transition"
+              >
+                <X className="w-4 h-4 text-red-500" />
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={handleUpload}
+            disabled={loading}
+            className="w-full mt-4 py-3 rounded-xl font-semibold text-white transition-all active:scale-95"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accent1}, ${colors.accent2})`,
+              boxShadow: `0 6px 20px ${colors.accent1}50`
+            }}
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+            ) : (
+              `Upload ${files.length} File${files.length > 1 ? "s" : ""}`
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* =========================================
+          POST-UPLOAD / READY FOR ANALYSIS
+      ========================================= */}
+      {uploadedFilesData.length > 0 && (
+        <div className="mt-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3
+              className="font-bold"
+              style={{ color: colors.textPrimary }}
+            >
+              Ready for Analysis
+            </h3>
+            <button
+              onClick={() => {
+                setUploadedFilesData([]);
+                setFiles([]);
+              }}
+              className="text-xs underline"
+              style={{ color: colors.accent2 }}
+            >
+              Upload More
+            </button>
+          </div>
+
+          {uploadedFilesData.map((file) => (
+            <div
+              key={file.id}
+              className="rounded-2xl border p-4 transition hover:shadow-lg"
+              style={{
+                backgroundColor: colors.cardBg,
+                borderColor: colors.border
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p
+                    className="font-semibold"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    {file.filename}
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {file.row_count} rows •{" "}
+                    {(file.file_size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleAnalyze(file.id)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-white transition-all hover:scale-105"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent2}, ${colors.accent1})`
+                  }}
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )}
+                  Analyze
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

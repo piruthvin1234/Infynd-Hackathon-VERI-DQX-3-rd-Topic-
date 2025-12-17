@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+.venv/
+
+# Environment files (SENSITIVE - DO NOT COMMIT)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+
+# Backend data (keep sample, ignore uploads)
+backend/data/uploads/*
+backend/data/cleaned/*
+!backend/data/sample.csv
+!backend/data/uploads/.gitkeep
+!backend/data/cleaned/.gitkeep
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
