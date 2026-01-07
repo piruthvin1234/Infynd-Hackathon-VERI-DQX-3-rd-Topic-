@@ -1,0 +1,155 @@
+📊 VETRI-DQX - DataGuardian AI
+What is this project?
+DataGuardian AI is an intelligent Data Quality Management Platform that helps organizations clean, validate, and analyze their data using AI and machine learning. Think of it as an automated data quality expert that can process CSV files and identify/fix issues automatically.
+
+🎯 Core Purpose
+The platform solves a critical business problem: Poor data quality costs companies millions. Instead of manually reviewing thousands of rows for errors, DataGuardian AI automates:
+
+Data validation
+Error detection
+Intelligent suggestions
+Automated cleaning
+Quality reporting
+🔥 Key Features & What It Does
+1️⃣ Data Quality Copilot (Main Feature)
+Upload CSV files and get instant analysis:
+
+Email Validation
+
+✅ Detects valid emails
+❌ Flags invalid formats
+🔍 Identifies missing emails
+💡 Suggests corrections
+Phone Number Validation
+
+✅ Validates phone numbers by region (e.g., India +91)
+❌ Detects invalid formats
+🔧 Auto-formats numbers correctly
+Duplicate Detection
+
+🔍 Finds duplicate rows based on selected columns
+📊 Shows duplicate count and affected records
+🗑️ Allows bulk removal
+Job Title Normalization (Your Recent Addition!)
+
+🤖 Uses RapidFuzz AI to categorize job titles
+📋 Groups similar titles (e.g., "SDE", "Software Engineer" → "IT")
+🎯 Standardizes to professional categories:
+Management, Sales, Engineering, Marketing, Finance, HR, Medical, Legal, Education, Operations, Admin, IT, R&D, Production, Consulting, Design, Hospitality, Driver, Real Estate
+Missing Values Detection
+
+🔍 Identifies empty cells
+📊 Shows missing data by column
+📈 Calculates completeness percentage
+2️⃣ Job Analysis Page (AI-Powered)
+Dedicated page for deep job title insights:
+
+📊 Field-Based Categorization: Groups job titles into professional fields
+🔍 Search & Filter: Find specific titles or categories
+📈 Statistics: Shows count per category
+🎨 Visual Organization: Expandable/collapsible categories
+🤖 Intelligent Matching: Handles typos, variations, abbreviations
+3️⃣ AI Chatbot Assistant (DeepSeek Integration)
+Your personal data quality expert:
+
+💬 Context-Aware: Knows about your uploaded data
+🧠 Smart Responses: Powered by DeepSeek R1 (Qwen3 8B)
+📊 Data Insights: Can answer questions about your analysis
+🎯 Helpful Guidance: Provides data quality best practices
+🔄 Conversation History: Maintains context across messages
+Example Questions You Can Ask:
+
+"How many invalid emails were found?"
+"What are the top job categories?"
+"Should I accept these suggestions?"
+"How can I improve data quality?"
+4️⃣ Review & Clean Workflow
+3-Stage Process:
+
+Stage 1: Test/Analyze
+
+Upload CSV
+AI analyzes and suggests fixes
+View all detected issues
+Stage 2: Review
+
+Human-in-the-loop validation
+Accept/Reject/Override suggestions
+Filter by issue type (email, phone, duplicates, etc.)
+Stage 3: Clean
+
+Apply approved changes
+Download cleaned CSV
+View change log
+5️⃣ Project Management
+📁 Multiple Projects: Organize different datasets
+🔄 Run History: Track all analysis runs
+📊 Comparison: Compare runs to see improvements
+⏱️ Timeline: Visual timeline of data quality over time
+6️⃣ Differential Analysis
+📊 Compare two datasets side-by-side
+🔍 Identify what changed between versions
+📈 Track quality improvements
+📉 Spot quality degradation
+7️⃣ Visual Analytics
+HeptagonChart Dashboard Shows 7 key metrics in a radar chart:
+
+Potential Duplicates
+Pending Reviews
+Total Suggestions
+Job Title Mappings
+Average Confidence
+Review Progress
+Remaining Issues
+🛠️ Technology Stack
+Backend (Python)
+FastAPI: Modern, fast web framework
+Pandas: Data manipulation
+RapidFuzz: Fuzzy string matching for job titles
+Phonenumbers: Phone validation
+SQLAlchemy: Database ORM
+PostgreSQL: Data storage
+DeepSeek API: AI chatbot
+Frontend (React)
+React + Vite: Fast, modern UI
+React Router: Navigation
+Lucide Icons: Beautiful icons
+Tailwind CSS: Styling
+Theme System: 10 themes + light/dark modes
+📈 Business Value
+Time Savings
+
+Manual review: 100 hours → AI review: 5 minutes
+99% faster data cleaning
+Cost Reduction
+
+Reduces data entry errors
+Prevents downstream issues
+Improves decision-making
+Quality Improvement
+
+Standardized data formats
+Consistent categorization
+Validated contact information
+Compliance
+
+Audit trails (change logs)
+Data quality reports
+Traceable modifications
+🎯 Use Cases
+HR Departments: Clean employee databases, standardize job titles
+Sales Teams: Validate customer contact information
+Marketing: Clean email lists, remove duplicates
+Data Migration: Clean data before moving to new systems
+Compliance: Ensure data quality for regulations
+🚀 Current Status
+✅ Fully Functional
+
+Data upload & analysis
+Email/phone validation
+Duplicate detection
+Job title normalization (RapidFuzz-based)
+AI chatbot (DeepSeek integration)
+Review workflow
+Project management
+Multi-theme support

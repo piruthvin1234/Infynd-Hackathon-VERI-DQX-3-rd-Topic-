@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, GitCompare, Check, AlertTriangle, ArrowRight, Zap, Edit2, Shield, Briefcase } from "lucide-react";
+import {
+    ArrowLeft, GitCompare, Check, AlertTriangle, ArrowRight, Zap,
+    Edit2, Shield, Briefcase, FileText, Download, Cpu, SlidersHorizontal,
+    Terminal, AlertOctagon, ChevronRight, Search
+} from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useChat } from "../context/ChatContext";
 import { getRun, getRunDataPreview } from "../services/api";
 import UnifiedFilterButton from "../components/UnifiedFilterButton";
 import { useFilters } from "../context/FilterContext";
@@ -12,6 +17,7 @@ export default function DifferentialAnalysis() {
     const location = useLocation();
     const { getColors } = useTheme();
     const colors = getColors();
+    const { setChatContext, setPageContext, clearChatContext } = useChat();
 
     const [run, setRun] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -24,7 +30,43 @@ export default function DifferentialAnalysis() {
 
     useEffect(() => {
         loadData();
+        return () => {
+            clearChatContext();
+            setPageContext("");
+        };
     }, [projectId, runId, filters]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const response = await getRun(projectId, runId);
+            setRun(response.data);
+
+            const reportChanges = response.data.report_data?.changes || [];
+            setChanges(reportChanges);
+
+            // Update Chatbot Context with first 10 deviations for analysis
+            setPageContext("Differential Analysis");
+            setChatContext({
+                deviations: reportChanges.slice(0, 10),
+                total_rows: response.data.row_count,
+                file_name: response.data.file_name
+            });
+
+            const activeFiltersJSON = getActiveFiltersJSON();
+
+            const [origRes, cleanRes] = await Promise.all([
+                getRunDataPreview(projectId, runId, "original", 50, 0, activeFiltersJSON),
+                getRunDataPreview(projectId, runId, "cleaned", 50, 0, activeFiltersJSON)
+            ]);
+            setOriginalData(origRes.data);
+            setCleanedData(cleanRes.data);
+        } catch (err) {
+            console.error("Failed to load run data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleBack = () => {
         if (location.state?.from === 'diff-dashboard') {
@@ -34,59 +76,18 @@ export default function DifferentialAnalysis() {
         }
     };
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const response = await getRun(projectId, runId);
-            setRun(response.data);
-
-            // Extract changes from report_data
-            const reportChanges = response.data.report_data?.changes || [];
-
-            // Client-side filtering for changes list (optional, if we want to filter the summary table too)
-            // But we already have server-side filtering ready for the grid view via getRunDataPreview
-            setChanges(reportChanges);
-
-            const activeFiltersJSON = getActiveFiltersJSON();
-
-            // Fetch Previews
-            const [origRes, cleanRes] = await Promise.all([
-                // Original data might not be filtered by "changes filters", but usually we want to see correlated rows.
-                // If the backend `get_run_data_preview` filters based on `fix_type`, it returns rows that matched.
-                // So we should pass filters to both if we want to see "rows with email fixes".
-                getRunDataPreview(projectId, runId, "original", 50, 0, activeFiltersJSON),
-                getRunDataPreview(projectId, runId, "cleaned", 50, 0, activeFiltersJSON)
-            ]);
-            setOriginalData(origRes.data);
-            setCleanedData(cleanRes.data);
-        } catch (err) {
-            console.error("Failed to load run data:", err);
-            // In a real app we'd show a toast
-        } finally {
-            setLoading(false);
-        }
-    };
-
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center transition-colors duration-500" style={{ backgroundColor: colors.primary }}>
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: colors.accent1 }}></div>
-            </div>
-        );
-    }
-
-    if (!run) {
-        return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.primary }}>
-                <div className="text-center">
-                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>Run Not Found</h2>
-                    <button onClick={() => navigate(-1)} className="px-4 py-2 rounded text-white" style={{ backgroundColor: colors.accent1 }}>
-                        Go Back
-                    </button>
+            <div className="min-h-screen flex items-center justify-center bg-[#030304]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 border-4 border-[#00f3ff]/20 border-t-[#00f3ff] rounded-full animate-spin shadow-[0_0_15px_rgba(0,243,255,0.3)]"></div>
+                    <p className="font-tech text-[#00f3ff] animate-pulse tracking-[0.2em] uppercase text-xs">Initializing Analysis Matrix...</p>
                 </div>
             </div>
         );
     }
+
+    if (!run) return null;
 
     const metrics = {
         total: changes.length,
@@ -96,271 +97,344 @@ export default function DifferentialAnalysis() {
     };
 
     return (
-        <div className="min-h-screen transition-colors duration-500" style={{ backgroundColor: colors.primary }}>
-            {/* Background Pattern */}
-            <div className="fixed inset-0 opacity-5 pointer-events-none">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `radial-gradient(${colors.textSecondary} 1px, transparent 1px)`,
-                    backgroundSize: '30px 30px'
-                }}></div>
-            </div>
+        <div className="min-h-screen bg-[#030304] text-slate-200 font-sans selection:bg-[#00f3ff]/30 selection:text-white">
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+                
+                .font-tech { font-family: 'Orbitron', sans-serif !important; }
+                .font-mono { font-family: 'JetBrains Mono', monospace !important; }
+                
+                .tech-grid {
+                    background-image: 
+                        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+                    background-size: 40px 40px;
+                }
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
+                .tech-panel {
+                    background: rgba(10, 10, 15, 0.8);
+                    backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+                }
+
+                .glow-border:hover {
+                    border-color: rgba(0, 243, 255, 0.4);
+                    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+                }
+
+                .text-glow-blue { text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+
+                .scrollbar-cyber::-webkit-scrollbar { width: 6px; height: 6px; }
+                .scrollbar-cyber::-webkit-scrollbar-track { background: #050507; }
+                .scrollbar-cyber::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+                .scrollbar-cyber::-webkit-scrollbar-thumb:hover { background: #00f3ff; }
+            `}</style>
+
+            <div className="tech-grid fixed inset-0 pointer-events-none"></div>
+
+            {/* Navigation Header */}
+            <nav className="sticky top-0 z-50 tech-panel border-b border-white/5">
+                <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
                         <button
                             onClick={handleBack}
-                            className="p-2 rounded-xl transition-all hover:scale-105"
-                            style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}
+                            className="p-2 mr-2 rounded bg-white/5 border border-white/10 hover:border-[#00f3ff]/50 transition-all text-slate-400 hover:text-[#00f3ff]"
                         >
-                            <ArrowLeft className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                            <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
-                                    Differential Analysis
-                                </h1>
-                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-600">
-                                    RUN #{run.run_number}
-                                </span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-[#00f3ff]/10 flex items-center justify-center border border-[#00f3ff]/50">
+                                <Cpu className="w-5 h-5 text-[#00f3ff]" />
                             </div>
-                            <p style={{ color: colors.textSecondary }}>Checking differences between Original and Cleaned data</p>
+                            <span className="font-tech text-xl font-bold tracking-wider text-white">VETRI<span className="text-[#00f3ff]">DQX</span></span>
+                        </div>
+
+                        <div className="h-8 w-px bg-white/10"></div>
+
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-sm font-medium text-slate-300 uppercase tracking-widest px-2">Differential Analysis</h1>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#bc13fe]/10 text-[#bc13fe] border border-[#bc13fe]/30 font-mono tracking-wide">
+                                RUN #{run.run_number || 'ALPHA'}
+                            </span>
                         </div>
                     </div>
-                    <div>
-                        <UnifiedFilterButton columns={originalData.columns || []} />
+
+                    <div className="flex items-center gap-4">
+                        <UnifiedFilterButton columns={originalData.columns || []} isFuturistic />
+                        <button className="flex items-center gap-2 px-4 py-2 rounded bg-[#00f3ff]/10 border border-[#00f3ff]/50 text-[#00f3ff] text-xs font-bold hover:bg-[#00f3ff]/20 hover:shadow-[0_0_15px_rgba(0,243,255,0.3)] transition-all uppercase tracking-wider">
+                            <Download className="w-3 h-3" />
+                            Batch Export
+                        </button>
                     </div>
                 </div>
+            </nav>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="p-4 rounded-xl flex items-center gap-4" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                        <div className="p-3 rounded-lg bg-blue-100 text-blue-600">
-                            <GitCompare className="w-6 h-6" />
+            <main className="relative z-10 max-w-[1440px] mx-auto px-6 py-8 w-full">
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    {[
+                        { label: 'Total Diffs', val: metrics.total, icon: GitCompare, color: '#00f3ff' },
+                        { label: 'Auto Fixed', val: metrics.auto, icon: Zap, color: '#0aff60' },
+                        { label: 'Manual Edits', val: metrics.manual, icon: Terminal, color: '#bc13fe' },
+                        { label: 'Pending', val: metrics.pending, icon: AlertOctagon, color: '#ff003c' }
+                    ].map((stat, i) => (
+                        <div key={i} className="tech-panel p-5 rounded-lg flex items-center gap-5 glow-border transition-all duration-300 group overflow-hidden relative">
+                            <div className="absolute inset-x-0 bottom-0 h-[2px] opacity-20 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: stat.color }}></div>
+                            <div className="w-12 h-12 rounded bg-slate-800/30 flex items-center justify-center border border-white/5">
+                                <stat.icon className="w-6 h-6" style={{ color: stat.color }} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
+                                <p className="text-3xl font-tech font-bold text-white mt-1">{stat.val}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Total Differences</p>
-                            <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{metrics.total}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 rounded-xl flex items-center gap-4" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                        <div className="p-3 rounded-lg bg-green-100 text-green-600">
-                            <Zap className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Auto Fixed</p>
-                            <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{metrics.auto}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 rounded-xl flex items-center gap-4" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                        <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
-                            <Edit2 className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Manual Edits</p>
-                            <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{metrics.manual}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 rounded-xl flex items-center gap-4" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                        <div className="p-3 rounded-lg bg-yellow-100 text-yellow-600">
-                            <Shield className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Pending</p>
-                            <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{metrics.pending}</p>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* Job Analysis Button */}
-                <div className="flex justify-end mb-6">
-                    <button
-                        onClick={() => navigate(`/projects/${projectId}/runs/${runId}/job-summary`)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-medium hover:opacity-90 transition-all shadow-md"
-                        style={{ background: `linear-gradient(135deg, ${colors.accent2}, ${colors.primary})` }}
-                    >
-                        <Briefcase className="w-4 h-4" />
-                        Job Analysis
-                    </button>
-                </div>
-
-                {/* Diff Table */}
-                <div className="rounded-2xl overflow-hidden shadow-sm" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                    <div className="p-6 border-b" style={{ borderColor: colors.border }}>
-                        <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>Detailed Changes</h3>
+                {/* Change Log Table */}
+                <div className="tech-panel rounded-lg overflow-hidden mb-12">
+                    <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="flex items-center gap-4">
+                            <div className="w-1 h-5 bg-[#00f3ff] shadow-[0_0_10px_#00f3ff]"></div>
+                            <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em] font-tech text-glow-blue">Deep Change Log</h3>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <button
+                                onClick={() => navigate(`/projects/${projectId}/runs/${runId}/job-summary`)}
+                                className="flex items-center gap-2 px-3 py-1 rounded border border-[#bc13fe]/30 text-[#bc13fe] text-[10px] font-tech uppercase tracking-widest hover:bg-[#bc13fe]/10 transition-all font-bold"
+                            >
+                                <Briefcase className="w-3 h-3" />
+                                Job Summary
+                            </button>
+                            <div className="flex items-center gap-3 text-[10px] font-bold tracking-widest text-slate-500">
+                                <span>CONFIDENCE MATRIX:</span>
+                                <div className="flex gap-1.5">
+                                    <div className="w-2 h-2 rounded-sm bg-[#0aff60] shadow-[0_0_8px_#0aff60]"></div>
+                                    <div className="w-2 h-2 rounded-sm bg-yellow-400/50"></div>
+                                    <div className="w-2 h-2 rounded-sm bg-[#ff003c]/50"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {changes.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <Check className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                            <p className="font-medium" style={{ color: colors.textPrimary }}>No differences found!</p>
-                            <p className="text-sm" style={{ color: colors.textSecondary }}>The cleaned file is identical to the original.</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr style={{ backgroundColor: colors.secondary }}>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Row</th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Column</th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Original Value</th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}></th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Cleaned Value</th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Algorithm</th>
-                                        <th className="p-4 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Confidence</th>
+                    <div className="overflow-x-auto scrollbar-cyber">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-[#050507]">
+                                <tr>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Idx</th>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Field Mapping</th>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Original Input</th>
+                                    <th className="p-4 w-8 border-b border-white/5"></th>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Refined Output</th>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Core Logic</th>
+                                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-white/5">Trust Score</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {changes.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="p-20 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Check className="w-12 h-12 text-[#0aff60] opacity-50" />
+                                                <p className="font-tech text-slate-500 uppercase tracking-widest text-xs">No Matrix Deviations Detected</p>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y" style={{ divideColor: colors.border }}>
-                                    {changes.map((change, idx) => (
-                                        <tr key={idx} className="hover:bg-black/5 transition-colors">
-                                            <td className="p-4 font-mono text-sm" style={{ color: colors.textSecondary }}>
-                                                #{change.row_index + 1}
+                                ) : (
+                                    changes.map((change, idx) => (
+                                        <tr key={idx} className="hover:bg-white/[0.03] transition-colors group">
+                                            <td className="p-4 text-xs font-mono text-slate-600">
+                                                {String(change.row_index + 1).padStart(3, '0')}
                                             </td>
-                                            <td className="p-4 font-medium text-sm" style={{ color: colors.textPrimary }}>
+                                            <td className="p-4 text-xs font-bold text-slate-300 uppercase tracking-wider">
                                                 {change.column}
                                             </td>
-                                            <td className="p-4 text-sm font-medium text-red-500 bg-red-50/50 rounded-lg">
-                                                {change.original_value || <span className="text-gray-400 italic">null</span>}
+                                            <td className="p-4">
+                                                <span className="font-mono text-xs text-[#ff003c]/80 line-through decoration-[#ff003c]/50 decoration-2 italic">
+                                                    {change.original_value || 'NULL'}
+                                                </span>
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <ArrowRight className="w-4 h-4 text-gray-400" />
+                                            <td className="p-4 text-slate-700">
+                                                <ChevronRight className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:text-[#00f3ff] group-hover:translate-x-1 transition-all" />
                                             </td>
-                                            <td className="p-4 text-sm font-bold text-green-600 bg-green-50/50 rounded-lg">
-                                                {change.cleaned_value || <span className="text-gray-400 italic">null</span>}
+                                            <td className="p-4">
+                                                <span className="font-mono text-xs text-[#00f3ff] font-medium px-2 py-1.5 rounded bg-[#00f3ff]/10 border border-[#00f3ff]/20 shadow-[0_0_10px_rgba(0,243,255,0.05)]">
+                                                    {change.cleaned_value || 'NULL'}
+                                                </span>
                                             </td>
-                                            <td className="p-4 text-xs">
-                                                <span className="px-2 py-1 rounded bg-gray-100 text-gray-600 font-medium">
+                                            <td className="p-4">
+                                                <span className="text-[9px] font-mono text-slate-400 border border-white/10 px-2 py-1 rounded bg-black/20 uppercase tracking-tighter">
                                                     {change.fix_type}
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full rounded-full"
+                                                            className="h-full transition-all duration-500"
                                                             style={{
                                                                 width: `${(change.confidence || 0) * 100}%`,
-                                                                backgroundColor: change.confidence > 0.8 ? '#10b981' : change.confidence > 0.5 ? '#f59205' : '#ef4444'
+                                                                backgroundColor: change.confidence > 0.8 ? '#0aff60' : change.confidence > 0.5 ? '#facc15' : '#ff003c',
+                                                                boxShadow: change.confidence > 0.8 ? '0 0 8px #0aff60' : 'none'
                                                             }}
                                                         ></div>
                                                     </div>
-                                                    <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>
+                                                    <span className="text-[10px] font-mono font-bold" style={{
+                                                        color: change.confidence > 0.8 ? '#0aff60' : change.confidence > 0.5 ? '#facc15' : '#ff003c'
+                                                    }}>
                                                         {Math.round((change.confidence || 0) * 100)}%
                                                     </span>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Full Data Comparison */}
-            <div className="mt-8 rounded-2xl overflow-hidden shadow-sm" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}>
-                <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: colors.border }}>
-                    <div>
-                        <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>Full Data Comparison</h3>
-                        <p className="text-sm" style={{ color: colors.textSecondary }}>Side-by-side view of Original vs Cleaned Data (First 50 rows)</p>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <label className="flex items-center cursor-pointer gap-2">
-                            <span className="text-sm font-medium" style={{ color: colors.textSecondary }}>Show Only Differences</span>
-                            <div className="relative">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only"
-                                    checked={showOnlyDiffs}
-                                    onChange={() => setShowOnlyDiffs(!showOnlyDiffs)}
-                                />
-                                <div className={`w-10 h-6 rounded-full shadow-inner transition-colors duration-200 ${showOnlyDiffs ? 'bg-purple-600' : 'bg-gray-400'}`}></div>
-                                <div className={`absolute w-4 h-4 bg-white rounded-full shadow top-1 transition-transform duration-200 ${showOnlyDiffs ? 'left-5' : 'left-1'}`}></div>
+                </div>
+
+                {/* Data Matrix Section */}
+                <div className="tech-panel rounded-lg overflow-hidden">
+                    <div className="p-5 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/[0.02]">
+                        <div className="flex items-center gap-4">
+                            <div className="w-1 h-5 bg-[#bc13fe] shadow-[0_0_10px_#bc13fe]"></div>
+                            <div>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-[0.2em] font-tech text-glow-blue">Data Matrix</h3>
+                                <p className="text-[9px] text-slate-500 uppercase tracking-[0.3em] mt-1 font-tech">Dual-Channel Comparative Terminal</p>
                             </div>
-                        </label>
-                    </div>
-                </div>
+                        </div>
 
-                <div className="grid grid-cols-2 divide-x" style={{ divideColor: colors.border }}>
-                    {/* Original Side */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr style={{ backgroundColor: `${colors.secondary}80` }}>
-                                    {originalData.columns?.map((col, i) => (
-                                        <th key={i} className="p-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: colors.textSecondary }}>
-                                            {col}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y" style={{ divideColor: colors.border }}>
-                                {originalData.data?.filter((row, idx) => {
-                                    if (!showOnlyDiffs) return true;
-                                    // Check if this row has any changes in the cleaned version
-                                    const cleanRow = cleanedData.data?.[idx];
-                                    if (!cleanRow) return false;
-
-                                    return originalData.columns?.some(col => String(row[col]) !== String(cleanRow[col]));
-                                }).map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-black/5 h-12">
-                                        {originalData.columns?.map((col, i) => (
-                                            <td key={i} className="p-3 text-xs whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis" style={{ color: colors.textSecondary }}>
-                                                {row[col] !== null ? String(row[col]) : <span className="text-gray-300 italic">null</span>}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <div className="flex items-center gap-4">
+                            <div className="flex bg-black/60 p-1 rounded-lg border border-white/10 shadow-inner">
+                                <button
+                                    onClick={() => setShowOnlyDiffs(false)}
+                                    className={`px-4 py-1.5 text-[9px] font-tech font-bold rounded transition-all tracking-widest ${!showOnlyDiffs ? 'bg-[#1e293b] text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]' : 'text-slate-500 hover:text-white'}`}
+                                >
+                                    FULL SYNC
+                                </button>
+                                <button
+                                    onClick={() => setShowOnlyDiffs(true)}
+                                    className={`px-4 py-1.5 text-[9px] font-tech font-bold rounded transition-all tracking-widest ${showOnlyDiffs ? 'bg-[#1e293b] text-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.2)]' : 'text-slate-500 hover:text-white'}`}
+                                >
+                                    DIFFS ONLY
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Cleaned Side */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr style={{ backgroundColor: `${colors.secondary}` }}>
-                                    {cleanedData.columns?.map((col, i) => (
-                                        <th key={i} className="p-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: colors.textSecondary }}>
-                                            {col}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y" style={{ divideColor: colors.border }}>
-                                {cleanedData.data?.map((row, idx) => {
-                                    // Find original row to compare
-                                    const origRow = originalData.data?.[idx];
-
-                                    // Calculate diff status for entire row to handle filtering
-                                    const hasDiff = cleanedData.columns?.some(col => origRow && String(origRow[col]) !== String(row[col]));
-
-                                    if (showOnlyDiffs && !hasDiff) return null;
-
-                                    return (
-                                        <tr key={idx} className="hover:bg-black/5 h-12">
-                                            {cleanedData.columns?.map((col, i) => {
-                                                const isDiff = origRow && String(origRow[col]) !== String(row[col]);
-                                                return (
-                                                    <td
-                                                        key={i}
-                                                        className={`p-3 text-xs whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis ${isDiff ? 'bg-green-50 font-medium text-green-700' : ''}`}
-                                                        style={{ color: isDiff ? undefined : colors.textPrimary }}
-                                                    >
-                                                        {row[col] !== null ? String(row[col]) : <span className="text-gray-300 italic">null</span>}
-                                                    </td>
-                                                );
-                                            })}
+                    <div className="grid grid-cols-2 divide-x divide-white/10">
+                        {/* Raw Source Channel */}
+                        <div className="overflow-hidden bg-[#ff003c]/[0.012]">
+                            <div className="p-3 border-b border-white/5 text-center bg-[#ff003c]/[0.05] flex items-center justify-center gap-2">
+                                <AlertTriangle className="w-3 h-3 text-[#ff003c]" />
+                                <span className="text-[10px] font-tech font-bold text-[#ff003c] uppercase tracking-[0.3em] text-glow-red">Channel_1: RAW_SOURCE</span>
+                            </div>
+                            <div className="overflow-x-auto scrollbar-cyber max-h-[500px]">
+                                <table className="w-full text-left font-mono">
+                                    <thead className="bg-black/40 sticky top-0 border-b border-white/5">
+                                        <tr>
+                                            {originalData.columns?.map((col, i) => (
+                                                <th key={i} className="px-4 py-3 text-[9px] font-bold text-slate-500 uppercase tracking-tighter whitespace-nowrap">
+                                                    {col}
+                                                </th>
+                                            ))}
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-[11px]">
+                                        {originalData.data?.filter((row, idx) => {
+                                            if (!showOnlyDiffs) return true;
+                                            const cleanRow = cleanedData.data?.[idx];
+                                            if (!cleanRow) return false;
+                                            return originalData.columns?.some(col => String(row[col]) !== String(cleanRow[col]));
+                                        }).map((row, idx) => (
+                                            <tr key={idx} className="h-10 hover:bg-white/[0.04] transition-all group">
+                                                {originalData.columns?.map((col, i) => {
+                                                    const cleanRow = cleanedData.data?.[idx];
+                                                    const isDiff = cleanRow && String(row[col]) !== String(cleanRow[col]);
+                                                    return (
+                                                        <td key={i} className={`px-4 py-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis transition-colors ${isDiff ? 'text-[#ff003c] bg-[#ff003c]/5' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                                                            {row[col] !== null ? String(row[col]) : <span className="opacity-30 italic">NULL</span>}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Refined Output Channel */}
+                        <div className="overflow-hidden bg-[#00f3ff]/[0.012]">
+                            <div className="p-3 border-b border-white/5 text-center bg-[#00f3ff]/[0.05] flex items-center justify-center gap-2">
+                                <Zap className="w-3 h-3 text-[#00f3ff]" />
+                                <span className="text-[10px] font-tech font-bold text-[#00f3ff] uppercase tracking-[0.3em] text-glow-blue">Channel_2: REFINED_OUTPUT</span>
+                            </div>
+                            <div className="overflow-x-auto scrollbar-cyber max-h-[500px]">
+                                <table className="w-full text-left font-mono">
+                                    <thead className="bg-black/40 sticky top-0 border-b border-white/5">
+                                        <tr>
+                                            {cleanedData.columns?.map((col, i) => (
+                                                <th key={i} className="px-4 py-3 text-[9px] font-bold text-slate-500 uppercase tracking-tighter whitespace-nowrap">
+                                                    {col}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-[11px]">
+                                        {cleanedData.data?.filter((row, idx) => {
+                                            if (!showOnlyDiffs) return true;
+                                            const origRow = originalData.data?.[idx];
+                                            if (!origRow) return false;
+                                            return cleanedData.columns?.some(col => String(row[col]) !== String(origRow[col]));
+                                        }).map((row, idx) => (
+                                            <tr key={idx} className="h-10 hover:bg-white/[0.04] transition-all group">
+                                                {cleanedData.columns?.map((col, i) => {
+                                                    const origRow = originalData.data?.[idx];
+                                                    const isDiff = origRow && String(row[col]) !== String(origRow[col]);
+                                                    return (
+                                                        <td key={i} className={`px-4 py-2 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis transition-colors ${isDiff ? 'text-[#00f3ff] bg-[#00f3ff]/10 font-bold' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                                                            {row[col] !== null ? String(row[col]) : <span className="opacity-30 italic">NULL</span>}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+
+            </main>
+
+            {/* Footer Status Bar */}
+            <footer className="relative z-10 p-4 border-t border-white/5 tech-panel mt-12">
+                <div className="max-w-[1440px] mx-auto flex items-center justify-between text-[9px] font-tech uppercase tracking-[0.3em] text-slate-500">
+                    <div className="flex items-center gap-6">
+                        <span className="flex items-center gap-2">
+                            <div className="w-1 h-1 rounded-full bg-[#0aff60] animate-pulse shadow-[0_0_5px_#0aff60]"></div>
+                            AI Core: Synced
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <div className="w-1 h-1 rounded-full bg-[#00f3ff] animate-pulse"></div>
+                            Data Integrity: Nominal
+                        </span>
+                        <span className="flex items-center gap-2">
+                            <FileText className="w-3 h-3 opacity-50" />
+                            File: {run.file_name}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span>Encrypted Neural Link: Active</span>
+                        <Shield className="w-3 h-3 text-[#0aff60]/50" />
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }

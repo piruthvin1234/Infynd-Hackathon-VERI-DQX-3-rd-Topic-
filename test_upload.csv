@@ -1,4 +1,0 @@
-company_name,email,phone,job_title
-Acme Corp,contact@acme.com,1234567890,Manager
-Global Tech,invalid-email,9876543210,Developer
-,sales@missing.com,,Sales

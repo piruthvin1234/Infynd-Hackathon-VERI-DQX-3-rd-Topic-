@@ -32,6 +32,12 @@ app.include_router(files_router)
 app.include_router(verification_router)
 from routes.upload import router as upload_csv_router
 app.include_router(upload_csv_router, prefix="/api")
+from routes.yogi_logic_router import router as yogi_router
+app.include_router(yogi_router, prefix="/api")
+from routes.job_analysis_router import router as job_analysis_router
+app.include_router(job_analysis_router, prefix="/api")
+from routes.chatbot_router import router as chatbot_router
+app.include_router(chatbot_router, prefix="/api")
 
 # CORS - Allow frontend origins
 origins = [
@@ -39,6 +45,8 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -573,3 +581,4 @@ async def get_review_stats(session_id: str, token: str = Depends(oauth2_scheme),
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+ 
